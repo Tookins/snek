@@ -1,2 +1,2 @@
 main:
-	g++ snek.cpp -lSDL2 -o snek
+	g++ ./src/main.cpp -lSDL2 -lSDL2_image -o ./bin/app
