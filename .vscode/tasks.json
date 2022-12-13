@@ -2,17 +2,18 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++ build active file",
-            "command": "/usr/bin/g++",
+            "label": "C/C++: g++-11 build active file",
+            "command": "/usr/bin/g++-11",
             "args": [
-                "-std=c++17",
-                "-fcolor-diagnostics",
+                "-fdiagnostics-color=always",
                 "-g",
-                "main.cpp",
+                "${file}",
+                "gamerenderer.cpp",
+                "snake.cpp",
                 "-lSDL2",
-                "-lSDL2_image", 
+                "-lSDL2_image",
                 "-o",
-                "${fileDirname}/app"
+                "${fileDirname}/bin/app"
             ],
             "options": {
                 "cwd": "${fileDirname}"

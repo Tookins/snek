@@ -1,2 +1,2 @@
 main:
-	g++ ./src/main.cpp -lSDL2 -lSDL2_image -o ./bin/app
+	g++ main.cpp snake.cpp gamerenderer.cpp -lSDL2 -lSDL2_image -o bin/app
