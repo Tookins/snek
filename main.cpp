@@ -13,6 +13,7 @@
 #include <string>
 #include <tuple>
 #include <cstdlib>
+#include <algorithm>
 #include "GameRenderer.hpp"
 #include "Snake.hpp"
 
@@ -163,6 +164,13 @@ int main(int argc, char *argv[])
             gWindow.render(bodyTexture, NULL, &bodyRect);
         }
 
+        //see if the snakes head collides with its body
+        std::list<std::pair<int,int>> snekCoordinates = snek->getBody();
+        std::pair<int,int> headCoordinates = {headRect.x, headRect.y};
+        if (std::find(snekCoordinates.begin(), snekCoordinates.end(), headCoordinates) != snekCoordinates.end())
+        {
+            quit = true;
+        }
         //display the renderer to the screen
         gWindow.display();
 
