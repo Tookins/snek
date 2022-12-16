@@ -1,8 +1,8 @@
 #include "Snake.hpp"
 
 // screen dimension constants
-const int SCREEN_WIDTH = 1920;
-const int SCREEN_HEIGHT = 1080;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 960;
 
 // texture dimension constant
 const int TEXTURE_WIDTH = 32;
@@ -54,21 +54,16 @@ void Snake::setVel(int vX, int vY)
     m_vX = vX;
     m_vY = vY;
 }
-void Snake::addSegment()
+void Snake::update(bool onTarget)
 {
-    //add a segment to the end of the snake in the direction the tail is pointing
-    m_length++;
-    m_body.push_back({(std::get<0>(m_body.back()) + TEXTURE_WIDTH + SCREEN_WIDTH)%SCREEN_WIDTH, 
-    (std::get<1>(m_body.back()) +TEXTURE_HEIGHT + SCREEN_HEIGHT)%SCREEN_HEIGHT});
-}
-void Snake::update()
-{
-    if (m_length > 1) 
+    m_body.push_front({m_head.x, m_head.y});
+    if (!onTarget)
     {
-        int x_old = m_head.x;
-        int y_old = m_head.y;
-        m_body.push_front({x_old, y_old});
         m_body.pop_back();
+    }
+    else
+    {
+        m_length++;
     }
     m_head.x = (m_head.x + m_vX + SCREEN_WIDTH) % SCREEN_WIDTH;
     m_head.y = (m_head.y + m_vY + SCREEN_HEIGHT) % SCREEN_HEIGHT;    

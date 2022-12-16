@@ -24,8 +24,7 @@ public:
     void setLength(int len = 0);
     void setPos(int X=0, int Y=0);
     void setVel(int vX=0, int vY=0);
-    void addSegment();
-    void update();
+    void update(bool onTarget = false);
 };
 
 #endif
