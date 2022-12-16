@@ -1,51 +1,75 @@
-#include <SDL2/SDL.h>
-
 #include "Snake.hpp"
 
-//screen dimension constants
-const Uint32 SCREEN_WIDTH = 1366;
-const Uint32 SCREEN_HEIGHT = 768;
+// screen dimension constants
+const int SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 1080;
 
-//snake entity class
-Snake::Snake(SDL_Texture* text, int x, int y, int x_v, int y_v)
+// texture dimension constant
+const int TEXTURE_WIDTH = 32;
+const int TEXTURE_HEIGHT = 32;
+
+// snake entity class
+Snake::Snake(int len, int X, int Y, int vX, int vY)
 {
-    x_pos = x%SCREEN_WIDTH;
-    y_pos = y%SCREEN_HEIGHT;
-    x_vel = x_v;
-    y_vel = y_v;
-    texture = text;
-    rect = {x_pos, y_pos, 32, 32};
+    m_length = len;
+    m_vX = vX;
+    m_vY = vY;
+    m_head = {(X + SCREEN_WIDTH) % SCREEN_WIDTH, (Y + SCREEN_HEIGHT) % SCREEN_HEIGHT, TEXTURE_WIDTH, TEXTURE_HEIGHT};
+    for (int i = 1; i < len; i++)
+    {
+        m_body.push_back({(m_head.x + i * TEXTURE_WIDTH) % SCREEN_WIDTH, m_head.y});
+    }
 }
-int Snake::get_xpos(){
-    return x_pos;
+int Snake::getVX()
+{
+    return m_vX;
 }
-int Snake::get_ypos(){
-    return y_pos;
+int Snake::getVY()
+{
+    return m_vY;
 }
-int Snake::get_xvel(){
-    return x_vel;
+int Snake::getLength()
+{
+    return m_length;
 }
-int Snake::get_yvel(){
-    return y_vel;
+SDL_Rect Snake::getHead()
+{
+    return m_head;
 }
-void Snake::set_pos(int x, int y){
-    x_pos = x%SCREEN_WIDTH;
-    y_pos = y%SCREEN_HEIGHT;
+std::list<std::pair<int,int>> Snake::getBody()
+{
+    return m_body;
 }
-void Snake::set_vel(int v_x, int v_y){
-    x_vel = v_x;
-    y_vel = v_y;
+void Snake::setLength(int len)
+{
+    m_length = len;
 }
-SDL_Texture* Snake::get_texture(){
-    return texture;
+void Snake::setPos(int X, int Y)
+{
+    m_head.x = (X + SCREEN_WIDTH) % SCREEN_WIDTH;
+    m_head.y = (Y + SCREEN_HEIGHT) % SCREEN_HEIGHT;
 }
-SDL_Rect Snake::get_rect(){
-    return rect;
+void Snake::setVel(int vX, int vY)
+{
+    m_vX = vX;
+    m_vY = vY;
 }
-void Snake::move(){
-    x_pos = (x_pos + x_vel)%SCREEN_WIDTH;
-    y_pos = (y_pos + y_vel)%SCREEN_HEIGHT;
-    rect.x = x_pos;
-    rect.y = y_pos;
-};
-
+void Snake::addSegment()
+{
+    //add a segment to the end of the snake in the direction the tail is pointing
+    m_length++;
+    m_body.push_back({(std::get<0>(m_body.back()) + TEXTURE_WIDTH + SCREEN_WIDTH)%SCREEN_WIDTH, 
+    (std::get<1>(m_body.back()) +TEXTURE_HEIGHT + SCREEN_HEIGHT)%SCREEN_HEIGHT});
+}
+void Snake::update()
+{
+    if (m_length > 1) 
+    {
+        int x_old = m_head.x;
+        int y_old = m_head.y;
+        m_body.push_front({x_old, y_old});
+        m_body.pop_back();
+    }
+    m_head.x = (m_head.x + m_vX + SCREEN_WIDTH) % SCREEN_WIDTH;
+    m_head.y = (m_head.y + m_vY + SCREEN_HEIGHT) % SCREEN_HEIGHT;    
+}
