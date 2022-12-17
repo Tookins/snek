@@ -1,4 +1,4 @@
-// snake game
+// snake game written in c++ using sdl2 and aseprite
 // TODO:
 // Add a button to the title screen that starts the game
 // Create game objects and logic
@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include "GameRenderer.hpp"
+#include "GameObject.hpp"
 #include "Snake.hpp"
 
 // game constants
@@ -43,22 +44,22 @@ int main(int argc, char *argv[])
 
     // load title screen
 
-    // quit flag
-    bool quit = false;
+    
 
     // instantiate game objects
     Snake *snek = new Snake(1, 0, 0, 0, TEXTURE_HEIGHT);
 
-    //load in game textures
+    // load in game textures
     SDL_Texture *headTexture = gWindow.loadTexture("images/snekkyBoy.png");
     SDL_Texture *bodyTexture = gWindow.loadTexture("images/snekBody.png");
     SDL_Texture *foodTexture = gWindow.loadTexture("images/snekFood.png");
+    SDL_Texture *gameOverTex = gWindow.loadTexture("images/game_over.png");
 
-    //render the head of the snake in its initial position
+    // render the head of the snake in its initial position
     SDL_Rect headRect = snek->getHead();
     gWindow.render(headTexture, NULL, &headRect);
-    
-    //render the body of the snake if necessary
+
+    // render the body of the snake if necessary
     SDL_Rect bodyRect = {0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT};
     for (std::pair<int, int> segment : snek->getBody())
     {
@@ -66,21 +67,29 @@ int main(int argc, char *argv[])
         bodyRect.x = std::get<0>(segment);
         gWindow.render(bodyTexture, NULL, &bodyRect);
     }
-    
-    //render the snake food in its initial position
-    SDL_Rect target = {TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH))- TEXTURE_WIDTH, 
-                      TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT)) - TEXTURE_HEIGHT, 
-                      TEXTURE_WIDTH, TEXTURE_HEIGHT};
+
+    // render the snake food in its initial position
+    SDL_Rect target = {TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH)) - TEXTURE_WIDTH,
+                       TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT)) - TEXTURE_HEIGHT,
+                       TEXTURE_WIDTH, TEXTURE_HEIGHT};
     gWindow.render(gWindow.loadTexture("images/snekFood.png"), NULL, &target);
-    
-    //draw the initial conditions for the game
+
+    // draw the initial conditions for the game
     gWindow.display();
 
     // limit frame rate
     Uint32 startingTick;
 
+    // initialize the game instance when user enters a name
+    std::string username;
+    std::cin>>username;
+    GameObject *instance = new GameObject(username);
+    int score = 0;
+
+    // quit flag
+    bool running = true;
     // main loop
-    while (!quit)
+    while (running)
     {
         // event for game inputs
         SDL_Event gameEvent;
@@ -88,19 +97,19 @@ int main(int argc, char *argv[])
         // get time from initial tick
         startingTick = SDL_GetTicks();
 
-        //flag for checking if snake hits the target (food)
+        // flag for checking if snake hits the target (food)
         bool onTarget = false;
 
-        //reads through the event queue and moves according to arrow keys
-        //or closes on esc key
+        // reads through the event queue and moves according to arrow keys
+        // or closes on esc key
         while (SDL_PollEvent(&gameEvent) != 0)
         {
-            //closes the window if user clicks the 'x' button
+            // closes the window if user clicks the 'x' button
             if (gameEvent.type == SDL_QUIT)
             {
-                quit = true;
+                running = false;
             }
-            //when a key is pressed, changes direction or closes the program
+            // when a key is pressed, changes direction or closes the program
             else if (gameEvent.type == SDL_KEYDOWN)
             {
                 switch (gameEvent.key.keysym.sym)
@@ -122,7 +131,7 @@ int main(int argc, char *argv[])
                     break;
 
                 case SDLK_ESCAPE:
-                    quit = true;
+                    running = false;
                     continue;
                     break;
 
@@ -132,31 +141,31 @@ int main(int argc, char *argv[])
             }
         }
 
-        //clear the window and render the textures for the next frame
+        // clear the window and render the textures for the next frame
         gWindow.clear();
 
-        //if the snakes head is on the same rect as the target
-        //set the update flag to true and change the position
-        //of the target if necessary
+        // if the snakes head is on the same rect as the target
+        // set the update flag to true and change the position
+        // of the target if necessary
         if (target.x == headRect.x && target.y == headRect.y)
         {
             onTarget = true;
-            target.x = TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH) + 1)- TEXTURE_WIDTH;
+            target.x = TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH) + 1) - TEXTURE_WIDTH;
             target.y = TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT) + 1) - TEXTURE_HEIGHT;
         }
 
-        //update the position of the snake and increase length by 1  
-        //if onTarget == true
+        // update the position of the snake and increase length by 1
+        // if onTarget == true
         snek->update(onTarget);
- 
-        //add the target texture to the renderer
+
+        // add the target texture to the renderer
         gWindow.render(foodTexture, NULL, &target);
-       
-        //add the head of the snake to the renderer
+
+        // add the head of the snake to the renderer
         headRect = snek->getHead();
         gWindow.render(headTexture, NULL, &headRect);
-        
-        //add the body of the snake to the renderer
+
+        // add the body of the snake to the renderer
         for (std::pair<int, int> segment : snek->getBody())
         {
             bodyRect.x = std::get<0>(segment);
@@ -164,14 +173,17 @@ int main(int argc, char *argv[])
             gWindow.render(bodyTexture, NULL, &bodyRect);
         }
 
-        //see if the snakes head collides with its body
-        std::list<std::pair<int,int>> snekCoordinates = snek->getBody();
-        std::pair<int,int> headCoordinates = {headRect.x, headRect.y};
+        // see if the snakes head collides with its body
+        std::list<std::pair<int, int>> snekCoordinates = snek->getBody();
+        std::pair<int, int> headCoordinates = {headRect.x, headRect.y};
         if (std::find(snekCoordinates.begin(), snekCoordinates.end(), headCoordinates) != snekCoordinates.end())
         {
-            quit = true;
+            running = false;
+            score = snekCoordinates.size();
+            gWindow.clear();
+            gWindow.render(gameOverTex, nullptr, nullptr);
         }
-        //display the renderer to the screen
+        // display the renderer to the screen
         gWindow.display();
 
         // delay next frame to hold fps constant (defined at the top of main)
@@ -179,10 +191,15 @@ int main(int argc, char *argv[])
         {
             SDL_Delay(1000 / fps - (SDL_GetTicks() - startingTick));
         }
+
     }
+    //what happens when the game is over?
+    SDL_Delay(5000);
 
     // free up game entity memory
     delete snek;
+    delete instance;
+
     // destroy game window
     gWindow.destroy();
 

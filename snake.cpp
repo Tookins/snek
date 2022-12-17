@@ -36,7 +36,7 @@ SDL_Rect Snake::getHead()
 {
     return m_head;
 }
-std::list<std::pair<int,int>> Snake::getBody()
+std::list<std::pair<int, int>> Snake::getBody()
 {
     return m_body;
 }
@@ -66,5 +66,5 @@ void Snake::update(bool onTarget)
         m_length++;
     }
     m_head.x = (m_head.x + m_vX + SCREEN_WIDTH) % SCREEN_WIDTH;
-    m_head.y = (m_head.y + m_vY + SCREEN_HEIGHT) % SCREEN_HEIGHT;    
+    m_head.y = (m_head.y + m_vY + SCREEN_HEIGHT) % SCREEN_HEIGHT;
 }
