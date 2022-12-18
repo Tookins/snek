@@ -5,6 +5,7 @@
 #include <string>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 class GameRenderer
 {
@@ -13,7 +14,8 @@ public:
     SDL_Texture *loadTexture(std::string tex_path);
     void destroy();
     void clear();
-    void render(SDL_Texture *tex, SDL_Rect *src, SDL_Rect *dst);
+    void renderImage(SDL_Texture *tex, SDL_Rect *src, SDL_Rect *dst);
+    void renderText(TTF_Font *font, std::string text, SDL_Rect *src, SDL_Rect *dst);
     void display();
 
 private:

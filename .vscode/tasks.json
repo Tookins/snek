@@ -11,8 +11,10 @@
                 "${file}",
                 "gamerenderer.cpp",
                 "snake.cpp",
+                "gameobject.cpp",
                 "-lSDL2",
                 "-lSDL2_image",
+                "-lSDL2_ttf",
                 "-o",
                 "${fileDirname}/bin/app"
             ],
