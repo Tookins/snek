@@ -20,7 +20,7 @@
 #include "Snake.hpp"
 
 // game constants
-#define fps 60
+#define fps 12
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 960
 #define TEXTURE_WIDTH 32
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
         // initialize the game instance
         GameObject *instance = new GameObject();
-        Snake *snek = new Snake(1, 0, 0, 0, TEXTURE_HEIGHT);
+        Snake *snek = new Snake(1, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, TEXTURE_HEIGHT);
         gWindow.clear();
 
         // initialize rectangles that will
@@ -118,13 +118,13 @@ int main(int argc, char *argv[])
         // render the head of the snake in its initial position
         SDL_Rect headRect = snek->getHead();
         SDL_Rect bodyRect;
-        gWindow.renderImage(headTexture, NULL, &headRect);
+        gWindow.renderImage(headTexture, nullptr, &headRect);
 
         // render the snake food in its initial position
-        SDL_Rect target = {TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH)) - TEXTURE_WIDTH,
-                           TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT)) - TEXTURE_HEIGHT,
+        SDL_Rect target = {TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH - 2)) + TEXTURE_WIDTH,
+                           TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT - 2)) + TEXTURE_HEIGHT,
                            TEXTURE_WIDTH, TEXTURE_HEIGHT};
-        gWindow.renderImage(gWindow.loadTexture("images/snekFood.png"), NULL, &target);
+        gWindow.renderImage(gWindow.loadTexture("images/snekFood.png"), nullptr, &target);
 
         // draw the initial configuration of the game
         gWindow.display();
@@ -207,8 +207,8 @@ int main(int argc, char *argv[])
             if (target.x == headRect.x && target.y == headRect.y)
             {
                 onTarget = true;
-                target.x = TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH) + 1) - TEXTURE_WIDTH;
-                target.y = TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT) + 1) - TEXTURE_HEIGHT;
+                target.x = TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH -2)) + TEXTURE_WIDTH;
+                target.y = TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT -2)) + TEXTURE_HEIGHT;
             }
 
             // update the position of the snake and increase length by 1
@@ -216,29 +216,34 @@ int main(int argc, char *argv[])
             snek->update(onTarget);
             headRect = snek->getHead();
 
-            // see if the snakes head collides with its body
+            // see if the snakes head collides with its body or the border
             // if true, exit game loop to game over loop
             // else, render the next frame
             std::list<std::pair<int, int>> snekCoordinates = snek->getBody();
             std::pair<int, int> headCoordinates = {headRect.x, headRect.y};
-            if (std::find(snekCoordinates.begin(), snekCoordinates.end(), headCoordinates) != snekCoordinates.end())
+            if (headRect.x == 0 || headRect.x == SCREEN_WIDTH - TEXTURE_WIDTH 
+                || headRect.y == 0 || headRect.y == SCREEN_HEIGHT - TEXTURE_HEIGHT
+                || std::find(snekCoordinates.begin(), snekCoordinates.end(), headCoordinates) != snekCoordinates.end())
+
             {
                 gameRunning = false;
                 gameOver = true;
             }
             else
             {
+                //add the game background to the renderer
+                gWindow.renderImage(gameBackground, nullptr, nullptr);
                 // add the target texture to the renderer
-                gWindow.renderImage(foodTexture, NULL, &target);
+                gWindow.renderImage(foodTexture, nullptr, &target);
 
                 // add the head of the snake to the renderImageer
-                gWindow.renderImage(headTexture, NULL, &headRect);
+                gWindow.renderImage(headTexture, nullptr, &headRect);
 
                 // add the body of the snake to the renderer
                 for (std::pair<int, int> segment : snek->getBody())
                 {
                     bodyRect = {std::get<0>(segment), std::get<1>(segment), TEXTURE_WIDTH, TEXTURE_HEIGHT};
-                    gWindow.renderImage(bodyTexture, NULL, &bodyRect);
+                    gWindow.renderImage(bodyTexture, nullptr, &bodyRect);
                 }
             }
 
