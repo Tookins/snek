@@ -26,12 +26,17 @@
 #define TEXTURE_WIDTH 32
 #define TEXTURE_HEIGHT 32
 
+//void function pointer for music
+int musicPlaying = 1;
+void musicFinished(){musicPlaying=0;}
+Mix_HookMusicFinished(musicFinished);
+
 // game entry point
 int main(int argc, char *argv[])
 {
 
     // initialize SDL, SDL_image, SDL_ttf, and SDL_mixer
-    if (SDL_Init(SDL_INIT_VIDEO) > 0)
+    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0)
     {
         printf("SDL failed to init! SDL Error: %s\n", SDL_GetError());
     }
@@ -43,6 +48,36 @@ int main(int argc, char *argv[])
     {
         printf("TTF failed to init! TTF Error: %s\n", TTF_GetError());
     }
+
+    //code copied from mixer_tutorial
+    int audio_rate = 22050;
+    Uint16 audio_format = AUDIO_S16SYS;
+    int audio_channels = 2;
+    int audio_buffers = 4096;
+
+    if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers)
+		    != 0) 
+    {
+	fprintf(stderr, "Unable to initialize audio: %s\n", Mix_GetError());
+	exit(1);
+    }
+    
+    Mix_Music *sound = nullptr;
+    sound = Mix_LoadMUS("snakecharmer.ogg");
+    if (sound==nullptr)
+    {
+        fprintf(stderr, "unable to load ogg file: %s\n", Mix_GetError();
+	return 1;
+    }
+
+    int channel;
+    channel = Mix_PlayMusic(sound, -1);
+    if (channel == -1)
+    {
+        fprintf(stderr, "Unable to play ogg file: %s\n", Mix_GetError());
+	return 1;
+    }
+    //end of code copied from mixer_tutorial
 
     // load in font for game over screen
     TTF_Font *gameOverFont = TTF_OpenFont("./fonts/joystix_monospace.ttf", 32);
@@ -68,236 +103,244 @@ int main(int argc, char *argv[])
     bool gameRunning = false;
     bool gameOver = false;
 
+    while(musicPlaying || appRunning || title || gameRunning || gameOver) {
     // intitialize the game instance
-    while (appRunning)
-    {
-        // start with title screen
-        title = true;
-        while (title)
-        {
-            // display the title screen
-            gWindow.clear();
-            gWindow.renderImage(gameTitle, nullptr, nullptr);
-            gWindow.display();
+	    while (appRunning)
+	    {
+		// start with title screen
+		title = true;
+		while (title)
+		{
+		    // display the title screen
+		    gWindow.clear();
+		    gWindow.renderImage(gameTitle, nullptr, nullptr);
+		    gWindow.display();
 
-            // check for mouse event to start the game
-            SDL_Event initEvent;
-            while (SDL_PollEvent(&initEvent) != 0)
-            {
-                // closes the window if user clicks the 'x' button
-                if (initEvent.type == SDL_QUIT)
-                {
-                    title = false;
-                    appRunning = false;
-                    break;
-                }
-                // set the game start flag to true to enter the game loop
-                else if (initEvent.type == SDL_KEYDOWN)
-                {
-                    gameRunning = true;
-                    title = false;
-                    break;
-                }
-            }
-        }
+		    // check for mouse event to start the game
+		    SDL_Event initEvent;
+		    while (SDL_PollEvent(&initEvent) != 0)
+		    {
+			// closes the window if user clicks the 'x' button
+			if (initEvent.type == SDL_QUIT)
+			{
+			    title = false;
+			    appRunning = false;
+			    break;
+			}
+			// set the game start flag to true to enter the game loop
+			else if (initEvent.type == SDL_KEYDOWN)
+			{
+			    gameRunning = true;
+			    title = false;
+			    break;
+			}
+		    }
+		}
 
-        // close the game if user quits from the
-        // title screen
-        if (!appRunning)
-        {
-            continue;
-        }
+		// close the game if user quits from the
+		// title screen
+		if (!appRunning)
+		{
+		    continue;
+		}
 
-        // initialize the game instance
-        GameObject *instance = new GameObject();
-        Snake *snek = new Snake(1, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, TEXTURE_HEIGHT);
-        gWindow.clear();
+		// initialize the game instance
+		GameObject *instance = new GameObject();
+		Snake *snek = new Snake(1, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, TEXTURE_HEIGHT);
+		gWindow.clear();
 
-        // initialize rectangles that will
-        // be used to render the snake and
-        // render the head of the snake in its initial position
-        SDL_Rect headRect = snek->getHead();
-        SDL_Rect bodyRect;
-        gWindow.renderImage(headTexture, nullptr, &headRect);
+		// initialize rectangles that will
+		// be used to render the snake and
+		// render the head of the snake in its initial position
+		SDL_Rect headRect = snek->getHead();
+		SDL_Rect bodyRect;
+		gWindow.renderImage(headTexture, nullptr, &headRect);
 
-        // render the snake food in its initial position
-        SDL_Rect target = {TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH - 2)) + TEXTURE_WIDTH,
-                           TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT - 2)) + TEXTURE_HEIGHT,
-                           TEXTURE_WIDTH, TEXTURE_HEIGHT};
-        gWindow.renderImage(gWindow.loadTexture("images/snekFood.png"), nullptr, &target);
+		// render the snake food in its initial position
+		SDL_Rect target = {TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH - 2)) + TEXTURE_WIDTH,
+				   TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT - 2)) + TEXTURE_HEIGHT,
+				   TEXTURE_WIDTH, TEXTURE_HEIGHT};
+		gWindow.renderImage(gWindow.loadTexture("images/snekFood.png"), nullptr, &target);
 
-        // draw the initial configuration of the game
-        gWindow.display();
+		// draw the initial configuration of the game
+		gWindow.display();
 
-        // used to get the time each loop begins for controlling
-        // framerate
-        Uint32 startingTick;
+		// used to get the time each loop begins for controlling
+		// framerate
+		Uint32 startingTick;
 
-        // main loop
-        while (gameRunning)
-        {
-            // event for game inputs
-            SDL_Event gameEvent;
+		// main loop
+		while (gameRunning)
+		{
+		    // event for game inputs
+		    SDL_Event gameEvent;
 
-            // get time from initial tick
-            startingTick = SDL_GetTicks();
+		    // get time from initial tick
+		    startingTick = SDL_GetTicks();
 
-            // flag for checking if snake hits the target (food)
-            bool onTarget = false;
+		    // flag for checking if snake hits the target (food)
+		    bool onTarget = false;
 
-            // reads through the event queue and moves according to arrow keys
-            // or closes on esc key
-            while (SDL_PollEvent(&gameEvent) != 0)
-            {
-                // closes the window if user clicks the 'x' button
-                if (gameEvent.type == SDL_QUIT)
-                {
-                    gameRunning = false;
-                }
-                // when a key is pressed, changes direction or closes the program
-                else if (gameEvent.type == SDL_KEYDOWN)
-                {
-                    switch (gameEvent.key.keysym.sym)
-                    {
-                    case SDLK_UP:
-                        if (snek->getVY() == 0)
-                        {
-                            snek->setVel(0, -1 * TEXTURE_HEIGHT);
-                        }
-                        break;
+		    // reads through the event queue and moves according to arrow keys
+		    // or closes on esc key
+		    while (SDL_PollEvent(&gameEvent) != 0)
+		    {
+			// closes the window if user clicks the 'x' button
+			if (gameEvent.type == SDL_QUIT)
+			{
+			    gameRunning = false;
+			}
+			// when a key is pressed, changes direction or closes the program
+			else if (gameEvent.type == SDL_KEYDOWN)
+			{
+			    switch (gameEvent.key.keysym.sym)
+			    {
+			    case SDLK_UP:
+				if (snek->getVY() == 0)
+				{
+				    snek->setVel(0, -1 * TEXTURE_HEIGHT);
+				}
+				break;
 
-                    case SDLK_DOWN:
-                        if (snek->getVY() == 0)
-                        {
-                            snek->setVel(0, TEXTURE_HEIGHT);
-                        }
-                        break;
+			    case SDLK_DOWN:
+				if (snek->getVY() == 0)
+				{
+				    snek->setVel(0, TEXTURE_HEIGHT);
+				}
+				break;
 
-                    case SDLK_LEFT:
-                        if (snek->getVX() == 0)
-                        {
-                            snek->setVel(-1 * TEXTURE_WIDTH, 0);
-                        }
-                        break;
+			    case SDLK_LEFT:
+				if (snek->getVX() == 0)
+				{
+				    snek->setVel(-1 * TEXTURE_WIDTH, 0);
+				}
+				break;
 
-                    case SDLK_RIGHT:
-                        if (snek->getVX() == 0)
-                        {
-                            snek->setVel(TEXTURE_WIDTH, 0);
-                        }
-                        break;
+			    case SDLK_RIGHT:
+				if (snek->getVX() == 0)
+				{
+				    snek->setVel(TEXTURE_WIDTH, 0);
+				}
+				break;
 
-                    case SDLK_ESCAPE:
-                        gameRunning = false;
-                        gameOver = true;
-                        continue;
+			    case SDLK_ESCAPE:
+				gameRunning = false;
+				gameOver = true;
+				continue;
 
-                    default:
-                        break;
-                    }
-                }
-            }
+			    default:
+				break;
+			    }
+			}
+		    }
 
-            // clear the window and render the textures for the next frame
-            gWindow.clear();
+		    // clear the window and render the textures for the next frame
+		    gWindow.clear();
 
-            // if the snakes head is on the same rect as the target
-            // set the update flag to true and change the position
-            // of the target if necessary
-            if (target.x == headRect.x && target.y == headRect.y)
-            {
-                onTarget = true;
-                target.x = TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH -2)) + TEXTURE_WIDTH;
-                target.y = TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT -2)) + TEXTURE_HEIGHT;
-            }
+		    // if the snakes head is on the same rect as the target
+		    // set the update flag to true and change the position
+		    // of the target if necessary
+		    if (target.x == headRect.x && target.y == headRect.y)
+		    {
+			onTarget = true;
+			target.x = TEXTURE_WIDTH * (rand() % (SCREEN_WIDTH / TEXTURE_WIDTH -2)) + TEXTURE_WIDTH;
+			target.y = TEXTURE_HEIGHT * (rand() % (SCREEN_HEIGHT / TEXTURE_HEIGHT -2)) + TEXTURE_HEIGHT;
+		    }
 
-            // update the position of the snake and increase length by 1
-            // if onTarget == true
-            snek->update(onTarget);
-            headRect = snek->getHead();
+		    // update the position of the snake and increase length by 1
+		    // if onTarget == true
+		    snek->update(onTarget);
+		    headRect = snek->getHead();
 
-            // see if the snakes head collides with its body or the border
-            // if true, exit game loop to game over loop
-            // else, render the next frame
-            std::list<std::pair<int, int>> snekCoordinates = snek->getBody();
-            std::pair<int, int> headCoordinates = {headRect.x, headRect.y};
-            if (headRect.x == 0 || headRect.x == SCREEN_WIDTH - TEXTURE_WIDTH 
-                || headRect.y == 0 || headRect.y == SCREEN_HEIGHT - TEXTURE_HEIGHT
-                || std::find(snekCoordinates.begin(), snekCoordinates.end(), headCoordinates) != snekCoordinates.end())
+		    // see if the snakes head collides with its body or the border
+		    // if true, exit game loop to game over loop
+		    // else, render the next frame
+		    std::list<std::pair<int, int>> snekCoordinates = snek->getBody();
+		    std::pair<int, int> headCoordinates = {headRect.x, headRect.y};
+		    if (headRect.x == 0 || headRect.x == SCREEN_WIDTH - TEXTURE_WIDTH 
+			|| headRect.y == 0 || headRect.y == SCREEN_HEIGHT - TEXTURE_HEIGHT
+			|| std::find(snekCoordinates.begin(), snekCoordinates.end(), headCoordinates) != snekCoordinates.end())
 
-            {
-                gameRunning = false;
-                gameOver = true;
-            }
-            else
-            {
-                //add the game background to the renderer
-                gWindow.renderImage(gameBackground, nullptr, nullptr);
-                // add the target texture to the renderer
-                gWindow.renderImage(foodTexture, nullptr, &target);
+		    {
+			gameRunning = false;
+			gameOver = true;
+		    }
+		    else
+		    {
+			//add the game background to the renderer
+			gWindow.renderImage(gameBackground, nullptr, nullptr);
+			// add the target texture to the renderer
+			gWindow.renderImage(foodTexture, nullptr, &target);
 
-                // add the head of the snake to the renderImageer
-                gWindow.renderImage(headTexture, nullptr, &headRect);
+			// add the head of the snake to the renderImageer
+			gWindow.renderImage(headTexture, nullptr, &headRect);
 
-                // add the body of the snake to the renderer
-                for (std::pair<int, int> segment : snek->getBody())
-                {
-                    bodyRect = {std::get<0>(segment), std::get<1>(segment), TEXTURE_WIDTH, TEXTURE_HEIGHT};
-                    gWindow.renderImage(bodyTexture, nullptr, &bodyRect);
-                }
-            }
+			// add the body of the snake to the renderer
+			for (std::pair<int, int> segment : snek->getBody())
+			{
+			    bodyRect = {std::get<0>(segment), std::get<1>(segment), TEXTURE_WIDTH, TEXTURE_HEIGHT};
+			    gWindow.renderImage(bodyTexture, nullptr, &bodyRect);
+			}
+		    }
 
-            // display the renderer to the screen
-            gWindow.display();
+		    // display the renderer to the screen
+		    gWindow.display();
 
-            // delay next frame to hold fps constant (defined at the top of main)
-            if (1000 / fps > SDL_GetTicks() - startingTick)
-            {
-                SDL_Delay(1000 / fps - (SDL_GetTicks() - startingTick));
-            }
-        }
-        // set the score based on the length of the snake
-        instance->setScore(snek->getBody());
+		    // delay next frame to hold fps constant (defined at the top of main)
+		    if (1000 / fps > SDL_GetTicks() - startingTick)
+		    {
+			SDL_Delay(1000 / fps - (SDL_GetTicks() - startingTick));
+		    }
+		}
+		// set the score based on the length of the snake
+		instance->setScore(snek->getBody());
 
-        // when the game instance is over, display the users name and score
-        // to the game over screen
-        std::string username = "Jeff";
-        std::string score = std::to_string(instance->getScore());
-        SDL_Rect usernameRect = {SCREEN_WIDTH / 3, SCREEN_HEIGHT / 3, 32 * (int)username.length(), 32};
-        SDL_Rect scoreRect = {SCREEN_WIDTH / 3, SCREEN_HEIGHT / 3 + 36, 32 * (int)score.length(), 32};
+		// when the game instance is over, display the users name and score
+		// to the game over screen
+		std::string username = "Jeff";
+		std::string score = std::to_string(instance->getScore());
+		SDL_Rect usernameRect = {SCREEN_WIDTH / 3, SCREEN_HEIGHT / 3, 32 * (int)username.length(), 32};
+		SDL_Rect scoreRect = {SCREEN_WIDTH / 3, SCREEN_HEIGHT / 3 + 36, 32 * (int)score.length(), 32};
 
-        // render the game over screen until the user quits or restarts the game
-        while (gameOver)
-        {
-            gWindow.clear();
-            gWindow.renderImage(gameOverTex, nullptr, nullptr);
-            gWindow.renderText(gameOverFont, username, nullptr, &usernameRect);
-            gWindow.renderText(gameOverFont, score, nullptr, &scoreRect);
-            gWindow.display();
-            // game over options (quit or play again)
-            SDL_Event gameOverEvent;
-            while (SDL_PollEvent(&gameOverEvent) != 0)
-            {
-                if (gameOverEvent.type == SDL_QUIT)
-                {
-                    gameOver = false;
-                    appRunning = false;
-                }
-                else if (gameOverEvent.type == SDL_KEYDOWN)
-                {
-                    gameOver = false;
-                    appRunning = true;
-                }
-            }
-        }
+		// render the game over screen until the user quits or restarts the game
+		while (gameOver)
+		{
+		    gWindow.clear();
+		    gWindow.renderImage(gameOverTex, nullptr, nullptr);
+		    gWindow.renderText(gameOverFont, username, nullptr, &usernameRect);
+		    gWindow.renderText(gameOverFont, score, nullptr, &scoreRect);
+		    gWindow.display();
+		    // game over options (quit or play again)
+		    SDL_Event gameOverEvent;
+		    while (SDL_PollEvent(&gameOverEvent) != 0)
+		    {
+			if (gameOverEvent.type == SDL_QUIT)
+			{
+			    gameOver = false;
+			    appRunning = false;
+			}
+			else if (gameOverEvent.type == SDL_KEYDOWN
+				&& gameOverEvent.key.keysym.sym == SDLK_RETURN)
+			{
+			    gameOver = false;
+			    appRunning = true;
+			}
+		    }
+		}
 
-        // free up game entity memory
-        delete snek;
-        delete instance;
+		// free up game entity memory
+		delete snek;
+		delete instance;
+	    }
+    Mix_HookMusicFinished(musicFinished);
     }
 
     // destroy game window
     gWindow.destroy();
+    //free music memory
+    Mix_HaltMusic();
+    Mix_FreeMusic(sound);
+    Mix_CloseAudio();
 
     // destroy loaded textures
     SDL_DestroyTexture(headTexture);
